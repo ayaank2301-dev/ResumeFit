@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResumeFit - Intelligent Resume Tailoring &amp; Skill Roadmap</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    if (typeof tailwind !== 'undefined') {
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#eef2ff',
+                100: '#e0e7ff',
+                200: '#c7d2fe',
+                300: '#a5b4fc',
+                400: '#818cf8',
+                500: '#6366f1',
+                600: '#4f46e5',
+                700: '#4338ca',
+                800: '#3730a3',
+                900: '#312e81'
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace']
+            }
+          }
+        }
+      };
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- PDF.js for client-side PDF text extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <!-- Firebase JS SDK (Compat v10) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- ===================================================================== -->
+  <!-- 1. AUTHENTICATION & LANDING SCREEN (Shown when logged out)            -->
+  <!-- ===================================================================== -->
+  <div id="authScreen" class="min-h-screen flex flex-col justify-between">
+    <!-- Top Navbar -->
+    <header class="w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-md shadow-brand-600/20">
+            <i class="fa-solid fa-layer-group text-lg"></i>
+          </div>
+          <div>
+            <span class="font-extrabold text-xl tracking-tight text-slate-900 dark:text-white">Resume<span class="text-brand-600 dark:text-brand-400">Fit</span></span>
+            <span class="hidden sm:inline-block ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300 border border-brand-200 dark:border-brand-800">Career Intelligence</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <button type="button" onclick="toggleTheme()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Toggle Dark/Light Mode">
+            <i class="fa-solid fa-moon dark:hidden"></i>
+            <i class="fa-solid fa-sun hidden dark:inline-block text-amber-400"></i>
+          </button>
+          <button type="button" onclick="switchAuthTab('login', true)" class="text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400 px-3 py-2 transition">
+            Sign In
+          </button>
+          <button type="button" onclick="switchAuthTab('signup', true)" class="text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl shadow-sm transition">
+            Create Account
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Split Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      
+      <!-- Left Pitch Column -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 dark:bg-brand-950/70 border border-brand-200 dark:border-brand-800/80 text-brand-700 dark:text-brand-300 text-xs font-semibold">
+          <span class="w-2 h-2 rounded-full bg-brand-600 animate-ping"></span>
+          Access your CV, scans &amp; roadmaps from any device
+        </div>
+
+        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.15]">
+          Measure your job fit, rewrite weak bullets, and close your <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-indigo-500 dark:from-brand-400 dark:to-indigo-300">skill gaps.</span>
+        </h1>
+
+        <p class="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
+          Upload your CV and paste any job description. ResumeFit gives you an instant compatibility score, uncovers missing must-have skills, rewrites weak experience lines truthfully, and builds a week-by-week learning plan synced to your account.
+        </p>
+
+        <!-- Feature Pills -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+              <i class="fa-solid fa-bullseye"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white">Deep Skill-Gap Analysis</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Separates core requirements from nice-to-have skills with visual coverage charts.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 mt-0.5">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white">Truthful Bullet Rewriter</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Aligns your real experience with the employer's phrasing&mdash;never fabricates fake skills.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+              <i class="fa-solid fa-route"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white">Custom Learning Roadmap</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Week-by-week study steps and portfolio mini-projects paced to your weekly hours.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white">Before &amp; After Re-Scan</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Update your resume as you learn skills and track your match score growth over time.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Privacy Notice Banner -->
+        <div class="p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-3">
+          <i class="fa-solid fa-shield-halved text-brand-600 dark:text-brand-400 text-base mt-0.5"></i>
+          <div>
+            <span class="font-semibold text-slate-800 dark:text-slate-200">Password-Protected Per-User Workspace:</span> Each user account is isolated so you only ever see your own CVs, scans, roadmaps, and job applications.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Authentication Card -->
+      <div class="lg:col-span-5">
+        <div id="authCardBox" class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/40 p-6 sm:p-8 transition-all duration-200">
+          
+          <!-- Auth Mode Tabs -->
+          <div class="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-6">
+            <button type="button" id="tabLoginBtn" onclick="switchAuthTab('login')" class="py-2.5 text-sm font-semibold rounded-lg transition bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm">
+              Sign In
+            </button>
+            <button type="button" id="tabSignupBtn" onclick="switchAuthTab('signup')" class="py-2.5 text-sm font-semibold rounded-lg transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+              Create Account
+            </button>
+          </div>
+
+          <!-- Saved Accounts Quick-Select -->
+          <div id="savedAccountsBox" class="hidden mb-5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Saved Accounts on This Device</span>
+              <button type="button" onclick="clearSavedLogins()" class="text-xs text-slate-400 hover:text-rose-500 transition">Clear saved</button>
+            </div>
+            <div id="savedAccountsList" class="space-y-2 max-h-36 overflow-y-auto custom-scrollbar"></div>
+          </div>
+
+          <!-- Auth Error/Status Alert Banner -->
+          <div id="authAlertBanner" class="hidden mb-4 p-3 rounded-xl text-xs font-semibold flex items-center gap-2"></div>
+
+          <!-- LOGIN FORM -->
+          <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Email Address</label>
+              <div class="relative">
+                <i class="fa-regular fa-envelope absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                <input id="loginEmail" type="email" required autocomplete="username" placeholder="you@university.edu" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white" />
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Password</label>
+                <button type="button" onclick="openForgotPasswordModal()" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">Forgot password?</button>
+              </div>
+              <div class="relative">
+                <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Enter your password" class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white" />
+                <button type="button" onclick="togglePasswordVisibility('loginPassword', 'loginEyeIcon')" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" title="Show/Hide Password">
+                  <i id="loginEyeIcon" class="fa-regular fa-eye text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <label class="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-600 dark:text-slate-300">
+                <input id="loginRemember" type="checkbox" checked class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                <span>Remember my email &amp; password on this device</span>
+              </label>
+            </div>
+
+            <button id="loginSubmitBtn" type="submit" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-md shadow-brand-600/20 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-right-to-bracket text-xs"></i>
+              <span>Sign In with Password</span>
+            </button>
+          </form>
+
+          <!-- SIGNUP FORM -->
+          <form id="signupForm" onsubmit="handleSignup(event)" class="space-y-4 hidden">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Full Name</label>
+              <div class="relative">
+                <i class="fa-regular fa-user absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                <input id="signupName" type="text" required placeholder="Enter your full name" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Email Address</label>
+              <div class="relative">
+                <i class="fa-regular fa-envelope absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                <input id="signupEmail" type="email" required autocomplete="username" placeholder="you@university.edu" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white" />
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Create Password</label>
+                <span id="pwStrengthLabel" class="text-[11px] font-bold text-slate-400">Min 6 characters</span>
+              </div>
+              <div class="relative">
+                <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                <input id="signupPassword" type="password" required minlength="6" autocomplete="new-password" oninput="evaluatePasswordStrength(this.value)" placeholder="Create a strong password" class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white" />
+                <button type="button" onclick="togglePasswordVisibility('signupPassword', 'signupEyeIcon')" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" title="Show/Hide Password">
+                  <i id="signupEyeIcon" class="fa-regular fa-eye text-sm"></i>
+                </button>
+              </div>
+              <!-- 4-Bar Password Strength Meter -->
+              <div class="grid grid-cols-4 gap-1.5 mt-2">
+                <div id="pwBar1" class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 transition-colors"></div>
+                <div id="pwBar2" class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 transition-colors"></div>
+                <div id="pwBar3" class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 transition-colors"></div>
+                <div id="pwBar4" class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 transition-colors"></div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Confirm Password</label>
+              <div class="relative">
+                <i class="fa-solid fa-shield-check absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                <input id="signupConfirmPassword" type="password" required minlength="6" autocomplete="new-password" placeholder="Re-enter your password" class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white" />
+                <button type="button" onclick="togglePasswordVisibility('signupConfirmPassword', 'signupConfirmEyeIcon')" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" title="Show/Hide Password">
+                  <i id="signupConfirmEyeIcon" class="fa-regular fa-eye text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <label class="inline-flex items-center gap-2 cursor-pointer text-xs text-slate-600 dark:text-slate-300">
+                <input id="signupRemember" type="checkbox" checked class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                <span>Remember my email &amp; password on this device</span>
+              </label>
+            </div>
+
+            <button id="signupSubmitBtn" type="submit" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-md shadow-brand-600/20 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-user-plus text-xs"></i>
+              <span>Create Password-Protected Account</span>
+            </button>
+          </form>
+
+          <!-- Divider -->
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-slate-200 dark:border-slate-800"></div>
+            </div>
+            <div class="relative flex justify-center text-xs uppercase">
+              <span class="bg-white dark:bg-slate-900 px-3 text-slate-400 font-medium">Or continue with</span>
+            </div>
+          </div>
+
+          <!-- Google Sign-In Button -->
+          <button type="button" onclick="handleGoogleAuthClick()" class="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm transition flex items-center justify-center gap-3">
+            <svg class="w-4 h-4" viewBox="0 0 24 24">
+              <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/>
+              <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/>
+              <path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/>
+              <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.8C3.5 21.4 7.4 24 12 24z"/>
+            </svg>
+            <span>Continue with Google Account</span>
+          </button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200/80 dark:border-slate-800/80 py-5 text-center text-xs text-slate-500 dark:text-slate-400">
+      ResumeFit Career Platform &bull; Private Per-User Storage &bull; Built for Job Seekers, Graduates &amp; Career Changers
+    </footer>
+  </div>
+
+
+  <!-- ===================================================================== -->
+  <!-- 2. MAIN AUTHENTICATED APPLICATION SHELL                               -->
+  <!-- ===================================================================== -->
+  <div id="appScreen" class="hidden min-h-screen flex flex-col lg:flex-row">
+    
+    <!-- Mobile Header -->
+    <div class="lg:hidden flex items-center justify-between px-4 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white">
+          <i class="fa-solid fa-layer-group text-sm"></i>
+        </div>
+        <span class="font-extrabold text-lg text-slate-900 dark:text-white">Resume<span class="text-brand-600 dark:text-brand-400">Fit</span></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="toggleTheme()" class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">
+          <i class="fa-solid fa-moon dark:hidden"></i>
+          <i class="fa-solid fa-sun hidden dark:inline-block text-amber-400"></i>
+        </button>
+        <button type="button" onclick="handleLogout()" class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-xs font-bold">
+          Log Out
+        </button>
+        <button type="button" onclick="toggleMobileSidebar()" class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-200 ease-in-out">
+      
+      <!-- Top Brand & Navigation -->
+      <div class="p-5 space-y-6 overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-md shadow-brand-600/20">
+              <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div>
+              <span class="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">Resume<span class="text-brand-600 dark:text-brand-400">Fit</span></span>
+              <span class="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">Career Workspace</span>
+            </div>
+          </div>
+          <button type="button" onclick="toggleMobileSidebar()" class="lg:hidden text-slate-400 hover:text-slate-600">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="space-y-1">
+          <button type="button" onclick="navigate('dashboard')" data-nav="dashboard" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition">
+            <i class="fa-solid fa-table-columns w-5 text-center"></i>
+            <span>Dashboard</span>
+          </button>
+
+          <button type="button" onclick="navigate('cv')" data-nav="cv" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition">
+            <div class="flex items-center gap-3">
+              <i class="fa-regular fa-file-lines w-5 text-center"></i>
+              <span>Resume Studio</span>
+            </div>
+            <span id="sidebarCvBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">Empty</span>
+          </button>
+
+          <button type="button" onclick="navigate('match')" data-nav="match" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition">
+            <i class="fa-solid fa-magnifying-glass-chart w-5 text-center"></i>
+            <span>New Job Match</span>
+          </button>
+
+          <button type="button" onclick="navigate('results')" data-nav="results" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition">
+            <div class="flex items-center gap-3">
+              <i class="fa-solid fa-bullseye w-5 text-center"></i>
+              <span>Match &amp; Rewriter</span>
+            </div>
+            <span id="sidebarScoreBadge" class="hidden text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300">--</span>
+          </button>
+
+          <button type="button" onclick="navigate('roadmap')" data-nav="roadmap" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition">
+            <div class="flex items-center gap-3">
+              <i class="fa-solid fa-route w-5 text-center"></i>
+              <span>Learning Roadmap</span>
+            </div>
+            <span id="sidebarRoadmapBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">0%</span>
+          </button>
+
+          <button type="button" onclick="navigate('progress')" data-nav="progress" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition">
+            <i class="fa-solid fa-chart-line w-5 text-center"></i>
+            <span>Score History</span>
+          </button>
+
+          <button type="button" onclick="navigate('tracker')" data-nav="tracker" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition">
+            <div class="flex items-center gap-3">
+              <i class="fa-solid fa-briefcase w-5 text-center"></i>
+              <span>Application Tracker</span>
+            </div>
+            <span id="sidebarTrackerBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">0</span>
+          </button>
+        </nav>
+
+        <!-- Daily Quota Card -->
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 space-y-3">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-semibold text-slate-600 dark:text-slate-300">Daily Scan Quota</span>
+            <span id="quotaText" class="font-bold text-brand-600 dark:text-brand-400">15 / 15 left</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div id="quotaBar" class="h-full bg-brand-600 rounded-full transition-all duration-300" style="width: 100%"></div>
+          </div>
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              Engine Active
+            </span>
+            <button type="button" onclick="openSettingsModal()" class="text-[11px] font-semibold text-brand-600 dark:text-brand-400 hover:underline">
+              AI Key Settings
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom User Profile, Password Change, Theme & Explicit Logout Button -->
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3 bg-slate-50/50 dark:bg-slate-900/50">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Appearance</span>
+          <button type="button" onclick="toggleTheme()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 transition">
+            <i class="fa-solid fa-moon dark:hidden text-slate-600"></i>
+            <i class="fa-solid fa-sun hidden dark:inline-block text-amber-400"></i>
+            <span id="themeBtnLabel">Dark Mode</span>
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div id="userAvatar" class="w-9 h-9 rounded-xl bg-brand-600 text-white font-bold text-sm flex items-center justify-center shrink-0">
+              U
+            </div>
+            <div class="truncate">
+              <p id="userNameDisplay" class="text-sm font-bold text-slate-900 dark:text-white truncate">User</p>
+              <p id="userEmailDisplay" class="text-xs text-slate-500 dark:text-slate-400 truncate">user@email.com</p>
+            </div>
+          </div>
+          <button type="button" onclick="openChangePasswordModal()" title="Change Password" class="p-2 rounded-xl text-slate-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/50 transition shrink-0">
+            <i class="fa-solid fa-key text-xs"></i>
+          </button>
+        </div>
+
+        <!-- Explicit Full-Width Log Out Button -->
+        <button type="button" onclick="handleLogout()" class="w-full py-2 px-3 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/80 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 text-xs font-bold transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Sign Out of Account</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main View Container -->
+    <main class="flex-1 min-w-0 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+
+      <!-- ================================================================= -->
+      <!-- VIEW 1: DASHBOARD                                                 -->
+      <!-- ================================================================= -->
+      <section id="view-dashboard" class="app-view space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">Welcome back, <span id="dashWelcomeName">there</span></h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Track your job compatibility, rewrite resume bullets, and complete your weekly skill roadmap.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="navigate('cv')" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center gap-2">
+              <i class="fa-regular fa-file-lines text-brand-600 dark:text-brand-400"></i>
+              <span>Manage CV</span>
+            </button>
+            <button type="button" onclick="navigate('match')" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition flex items-center gap-2">
+              <i class="fa-solid fa-plus"></i>
+              <span>New Job Match</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Summary Metric Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div onclick="navigate('results')" class="cursor-pointer p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-brand-400 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Latest Match Score</span>
+              <div class="w-9 h-9 rounded-xl bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+                <i class="fa-solid fa-bullseye"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="dashLatestScore" class="text-3xl font-extrabold text-slate-900 dark:text-white">--</span>
+              <span id="dashLatestJob" class="text-xs text-slate-500 dark:text-slate-400 truncate">No scans yet</span>
+            </div>
+          </div>
+
+          <div onclick="navigate('roadmap')" class="cursor-pointer p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-emerald-400 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Roadmap Progress</span>
+              <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <i class="fa-solid fa-list-check"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="dashRoadmapPct" class="text-3xl font-extrabold text-slate-900 dark:text-white">0%</span>
+              <span id="dashRoadmapSteps" class="text-xs text-slate-500 dark:text-slate-400">0 of 0 steps completed</span>
+            </div>
+          </div>
+
+          <div onclick="navigate('tracker')" class="cursor-pointer p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:border-amber-400 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Jobs Tracked</span>
+              <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <i class="fa-solid fa-briefcase"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="dashJobsCount" class="text-3xl font-extrabold text-slate-900 dark:text-white">0</span>
+              <span class="text-xs text-slate-500 dark:text-slate-400">Active applications</span>
+            </div>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Daily Requests Left</span>
+              <div class="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="dashQuotaLeft" class="text-3xl font-extrabold text-slate-900 dark:text-white">15</span>
+              <span class="text-xs text-slate-500 dark:text-slate-400">Cached repeats are free</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Workflow Banner + Recent Scans -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="font-bold text-base text-slate-900 dark:text-white">Recent Job Matches</h2>
+              <button type="button" onclick="navigate('match')" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">+ Run New Scan</button>
+            </div>
+            <div id="dashRecentScans" class="space-y-3"></div>
+          </div>
+
+          <div class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm flex flex-col justify-between space-y-4">
+            <div>
+              <h2 class="font-bold text-base text-slate-900 dark:text-white">Active Resume Status</h2>
+              <p id="dashCvSummary" class="text-xs text-slate-500 dark:text-slate-400 mt-1">No resume uploaded yet.</p>
+              <div id="dashCvPreviewBox" class="mt-4 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700 font-mono text-xs text-slate-600 dark:text-slate-300 max-h-40 overflow-y-auto custom-scrollbar whitespace-pre-wrap">Upload a PDF, PNG/JPG, or paste your CV text in Resume Studio to begin.</div>
+            </div>
+            <div class="flex items-center gap-2 pt-2">
+              <button type="button" onclick="navigate('cv')" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold hover:opacity-90 transition">
+                Open Resume Studio
+              </button>
+              <button type="button" onclick="loadSampleCVAndGo()" class="py-2.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                Load Sample CV
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================= -->
+      <!-- VIEW 2: RESUME STUDIO (CV Upload, OCR/PDF Parse & Editable Text)  -->
+      <!-- ================================================================= -->
+      <section id="view-cv" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">Resume Studio</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Upload a PDF, photo/scan (PNG, JPEG), or paste your resume text. Review and edit before matching.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="scrubPersonalData()" class="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center gap-2" title="Redact phone numbers and email addresses">
+              <i class="fa-solid fa-user-shield text-brand-600 dark:text-brand-400"></i>
+              <span>Redact Phone/Email</span>
+            </button>
+            <button type="button" onclick="deleteMyCV()" class="px-3.5 py-2 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-semibold hover:bg-rose-100 transition flex items-center gap-2">
+              <i class="fa-regular fa-trash-can"></i>
+              <span>Delete My CV</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Left: Upload & Sample Presets -->
+          <div class="lg:col-span-5 space-y-5">
+            <div id="dropZone" class="p-6 rounded-2xl bg-white dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-500 dark:hover:border-brand-400 transition text-center cursor-pointer" onclick="document.getElementById('cvFileInput').click()">
+              <input id="cvFileInput" type="file" accept=".pdf,.png,.jpg,.jpeg,.txt" class="hidden" onchange="handleFileUpload(event)" />
+              <div class="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-3">
+                <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+              </div>
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white">Click to upload or drag &amp; drop</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Accepts <strong>PDF, PNG, JPEG, or TXT</strong> (Max 4 MB, first 3 pages for PDF)</p>
+              <div id="fileProcessingStatus" class="hidden mt-4 p-2.5 rounded-xl bg-brand-50 dark:bg-brand-950/80 text-brand-700 dark:text-brand-300 text-xs font-medium flex items-center justify-center gap-2">
+                <i class="fa-solid fa-circle-notch fa-spin"></i>
+                <span id="fileProcessingText">Reading file...</span>
+              </div>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Or Load an Example Resume Template</span>
+                <span class="text-[11px] text-slate-400">Optional</span>
+              </div>
+              <div class="grid grid-cols-1 gap-2">
+                <button type="button" onclick="loadPresetCV('software')" class="text-left p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-500 transition flex items-center justify-between">
+                  <div>
+                    <p class="text-xs font-bold text-slate-900 dark:text-white">CS Undergraduate / Full-Stack Applicant</p>
+                    <p class="text-[11px] text-slate-500">JavaScript, React, Python, SQL, Git, Academic Projects</p>
+                  </div>
+                  <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                </button>
+                <button type="button" onclick="loadPresetCV('data')" class="text-left p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-500 transition flex items-center justify-between">
+                  <div>
+                    <p class="text-xs font-bold text-slate-900 dark:text-white">Junior Data &amp; Business Analyst</p>
+                    <p class="text-[11px] text-slate-500">Python, Pandas, Excel, SQL, Data Visualization</p>
+                  </div>
+                  <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                </button>
+                <button type="button" onclick="loadPresetCV('product')" class="text-left p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-500 transition flex items-center justify-between">
+                  <div>
+                    <p class="text-xs font-bold text-slate-900 dark:text-white">Career Changer &mdash; Product &amp; UX Coordinator</p>
+                    <p class="text-[11px] text-slate-500">User Research, Wireframing, Agile, Stakeholder Management</p>
+                  </div>
+                  <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Editable Extracted CV Text -->
+          <div class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm flex flex-col">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div>
+                <h2 class="font-bold text-base text-slate-900 dark:text-white">Review &amp; Edit Extracted CV Text</h2>
+                <p id="cvMetaStatus" class="text-xs text-slate-500 dark:text-slate-400">Paste your resume below or edit extracted text before running a job match.</p>
+              </div>
+              <span id="cvWordCountBadge" class="text-xs font-mono px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">0 words</span>
+            </div>
+
+            <textarea id="cvTextEditor" rows="16" oninput="handleCvEditorInput()" placeholder="Paste your full resume text here, or upload a PDF / image on the left..." class="w-full flex-1 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 custom-scrollbar"></textarea>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <span id="cvSaveIndicator" class="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5">
+                <i class="fa-solid fa-check-circle"></i>
+                Synced to your account
+              </span>
+              <div class="flex items-center gap-2.5">
+                <button type="button" onclick="saveCvManually()" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                  Save Changes
+                </button>
+                <button type="button" onclick="saveCvAndProceed()" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                  <span>Continue to Job Match</span>
+                  <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================= -->
+      <!-- VIEW 3: NEW JOB MATCH (Custom Job Description + Presets)          -->
+      <!-- ================================================================= -->
+      <section id="view-match" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">Job Fit &amp; Skill Analyzer</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Enter any custom job title, company, and full job description&mdash;or choose a sample role preset below.</p>
+          </div>
+          <div class="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-800">
+            <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 pl-2">Re-Scan Existing Role:</label>
+            <select id="rescanSelect" onchange="handleRescanPresetSelect()" class="text-xs font-semibold bg-slate-100 dark:bg-slate-800 border-0 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-500">
+              <option value="">-- New Job Application --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Target Job Title *</label>
+                <input id="jobTitleInput" type="text" placeholder="e.g., Full-Stack Software Engineer" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Company Name *</label>
+                <input id="jobCompanyInput" type="text" placeholder="e.g., Atlassian / Razorpay / Custom" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white" />
+              </div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70">
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">Weekly Study Time for Missing Skills</label>
+                <span id="studyHoursBadge" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-brand-600 text-white">8 hrs / week</span>
+              </div>
+              <input id="studyHoursInput" type="range" min="2" max="30" step="1" value="8" oninput="document.getElementById('studyHoursBadge').textContent = this.value + ' hrs / week'" class="w-full accent-brand-600 cursor-pointer" />
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Paste Full Job Description (Custom or Preset) *</label>
+                <button type="button" onclick="clearJobForm()" class="text-xs text-slate-400 hover:text-rose-500 transition">Clear fields</button>
+              </div>
+              <textarea id="jobDescInput" rows="11" placeholder="Paste the complete job description here-including responsibilities, required technical skills, and preferred qualifications..." class="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-xs sm:text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white custom-scrollbar"></textarea>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+              <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles text-brand-600 dark:text-brand-400"></i>
+                <span>Generates Match Score, Skill-Gap Chart, Bullet Rewrites &amp; Weekly Roadmap</span>
+              </div>
+              <button type="button" id="runMatchBtn" onclick="runFullMatchAnalysis()" class="px-6 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lg shadow-brand-600/25 transition flex items-center justify-center gap-2.5 shrink-0">
+                <i class="fa-solid fa-bolt"></i>
+                <span>Check My Fit &amp; Build Roadmap</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="lg:col-span-4 space-y-5">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="font-bold text-sm text-slate-900 dark:text-white">Quick Example Job Presets</h3>
+                <span class="text-[11px] text-slate-400">Click to auto-fill</span>
+              </div>
+              <div class="space-y-2.5 pt-1">
+                <button type="button" onclick="loadJobPreset('fullstack')" class="w-full text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 transition group">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-xs text-slate-900 dark:text-white group-hover:text-brand-600">Full-Stack Engineer (SDE-1)</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-300">Stripe</span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 mt-1">React, TypeScript, Node.js, PostgreSQL, Docker, REST APIs, AWS, Unit Testing</p>
+                </button>
+
+                <button type="button" onclick="loadJobPreset('data')" class="w-full text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 transition group">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-xs text-slate-900 dark:text-white group-hover:text-brand-600">Data Analyst / BI Associate</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">Swiggy</span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 mt-1">SQL, Python, Power BI, Tableau, A/B Testing, Statistical Modeling, Excel</p>
+                </button>
+
+                <button type="button" onclick="loadJobPreset('ai')" class="w-full text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 transition group">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-xs text-slate-900 dark:text-white group-hover:text-brand-600">AI / Machine Learning Intern</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-300">OpenScale</span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 mt-1">Python, PyTorch, Scikit-Learn, FastAPI, RAG, Vector Databases, Docker</p>
+                </button>
+
+                <button type="button" onclick="loadJobPreset('product')" class="w-full text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 transition group">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-xs text-slate-900 dark:text-white group-hover:text-brand-600">Associate Product Manager</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300">Notion</span>
+                  </div>
+                  <p class="text-[11px] text-slate-500 mt-1">Product Strategy, SQL, Figma, User Research, Agile/Scrum, A/B Testing</p>
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Your Active CV</span>
+                <button type="button" onclick="navigate('cv')" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">Edit CV</button>
+              </div>
+              <p id="matchCvStatusText" class="text-xs text-slate-600 dark:text-slate-300">Checking CV...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================= -->
+      <!-- VIEW 4: MATCH REPORT & TRUTHFUL CV LINE REWRITER                  -->
+      <!-- ================================================================= -->
+      <section id="view-results" class="app-view hidden space-y-6">
+        <div id="resultsEmptyState" class="p-12 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center max-w-lg mx-auto my-8 space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto text-2xl">
+            <i class="fa-solid fa-magnifying-glass-chart"></i>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">No Job Match Selected Yet</h2>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Upload or paste your CV and run a Job Match to see your compatibility score, missing must-have skills, and side-by-side rewritten resume bullets.</p>
+          <button type="button" onclick="navigate('match')" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition">
+            Go to Job Match
+          </button>
+        </div>
+
+        <div id="resultsContent" class="hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span id="resRoleBadge" class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">Role Title</span>
+                <span class="text-slate-400">&bull;</span>
+                <span id="resCompanyBadge" class="text-sm font-semibold text-brand-600 dark:text-brand-400">Company</span>
+                <span id="resCacheBadge" class="hidden text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">Cached Result (0 Quota Used)</span>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <i class="fa-solid fa-circle-info text-brand-500 mr-1"></i>
+                <strong>AI Estimate Notice:</strong> This score is an analytical estimate based on keyword and skill alignment, not an official score from any company's internal hiring system.
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+              <button type="button" onclick="triggerQuickRescan()" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold transition flex items-center gap-2">
+                <i class="fa-solid fa-rotate"></i>
+                <span>Re-Scan Updated CV</span>
+              </button>
+              <button type="button" onclick="navigate('roadmap')" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                <span>Open Learning Roadmap</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm flex flex-col items-center justify-center text-center">
+              <div class="relative w-40 h-40 flex items-center justify-center">
+                <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="50" stroke="currentColor" stroke-width="10" class="text-slate-100 dark:text-slate-800" fill="transparent" />
+                  <circle id="scoreRingCircle" cx="60" cy="60" r="50" stroke="currentColor" stroke-width="10" stroke-linecap="round" class="text-brand-600 transition-all duration-700" fill="transparent" stroke-dasharray="314" stroke-dashoffset="314" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span id="resScoreNumber" class="text-4xl font-extrabold text-slate-900 dark:text-white">0</span>
+                  <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">out of 100</span>
+                </div>
+              </div>
+              <div id="resDeltaBadge" class="hidden mt-2 text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+                +0 pts vs previous scan
+              </div>
+              <p id="resScoreVerdict" class="mt-4 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed"></p>
+            </div>
+
+            <div class="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h3 class="font-bold text-base text-slate-900 dark:text-white">Skill Coverage Breakdown</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Matched skills vs. Missing Must-Have and Nice-to-Have requirements</p>
+                </div>
+              </div>
+              <div class="h-52 w-full">
+                <canvas id="skillGapChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-check"></i>
+                  Skills You Have
+                </span>
+                <span id="countMatchedSkills" class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">0</span>
+              </div>
+              <div id="matchedSkillsContainer" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-exclamation"></i>
+                  Missing (Must-Have)
+                </span>
+                <span id="countMustSkills" class="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300">0</span>
+              </div>
+              <div id="missingMustContainer" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <i class="fa-solid fa-star-half-stroke"></i>
+                  Missing (Nice-to-Have)
+                </span>
+                <span id="countNiceSkills" class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300">0</span>
+              </div>
+              <div id="missingNiceContainer" class="flex flex-wrap gap-2"></div>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                  <i class="fa-solid fa-wand-magic-sparkles text-brand-600 dark:text-brand-400"></i>
+                  <span>Truthful CV Bullet Rewriter</span>
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Weak lines from your CV are strengthened to match the employer's action verbs and focus&mdash;without inventing skills you don't possess.</p>
+              </div>
+              <span class="text-xs font-medium px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300 shrink-0">Click "Use This Rewrite" to update your CV</span>
+            </div>
+
+            <div id="rewritesContainer" class="space-y-4"></div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================= -->
+      <!-- VIEW 5: WEEK-BY-WEEK LEARNING ROADMAP                             -->
+      <!-- ================================================================= -->
+      <section id="view-roadmap" class="app-view hidden space-y-6">
+        <div id="roadmapEmptyState" class="p-12 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center max-w-lg mx-auto my-8 space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto text-2xl">
+            <i class="fa-solid fa-route"></i>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">No Learning Roadmap Generated Yet</h2>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Run a Job Match first. ResumeFit will automatically order your missing skills from most important to least and build a week-by-week study plan.</p>
+          <button type="button" onclick="navigate('match')" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition">
+            Run a Job Match
+          </button>
+        </div>
+
+        <div id="roadmapContent" class="hidden space-y-6">
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2.5">
+                  <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">Personalized Learning Roadmap</h1>
+                  <span id="roadmapHoursTag" class="text-xs font-bold px-2.5 py-1 rounded-full bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300">8 hrs/week</span>
+                </div>
+                <p id="roadmapSubheader" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Ordered from Must-Have to Nice-to-Have skills. Tick off all 3 steps in a skill module to mark it complete, then add it to your CV and re-scan!</p>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <button type="button" onclick="syncCompletedSkillsToCV()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                  <i class="fa-solid fa-file-circle-plus"></i>
+                  <span>Add Completed Skills to CV &amp; Re-Scan</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between text-xs font-semibold">
+                <span class="text-slate-600 dark:text-slate-300">Overall Study Completion</span>
+                <span id="roadmapProgressText" class="text-emerald-600 dark:text-emerald-400">0% (0 / 0 steps)</span>
+              </div>
+              <div class="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div id="roadmapProgressBar" class="h-full bg-gradient-to-r from-brand-600 to-emerald-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="roadmapModulesContainer" class="space-y-4"></div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================= -->
+      <!-- VIEW 6: PROGRESS & BEFORE/AFTER SCORE CHART                       -->
+      <!-- ================================================================= -->
+      <section id="view-progress" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">Score Improvement History</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Visualize how your match score improves across re-scans as you rewrite bullets and complete your roadmap.</p>
+          </div>
+          <button type="button" onclick="triggerQuickRescan()" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition flex items-center gap-2 self-start">
+            <i class="fa-solid fa-rotate"></i>
+            <span>Run Re-Scan Now</span>
+          </button>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+          <div class="h-72 w-full">
+            <canvas id="progressHistoryChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+          <h3 class="font-bold text-base text-slate-900 dark:text-white mb-4">All Recorded Scans</h3>
+          <div id="scanHistoryList" class="space-y-2.5"></div>
+        </div>
+      </section>
+
+
+      <!-- ================================================================= -->
+      <!-- VIEW 7: APPLICATION TRACKER                                       -->
+      <!-- ================================================================= -->
+      <section id="view-tracker" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">Application Tracker</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Track every role you've scanned or applied to, along with its match score and current interview stage.</p>
+          </div>
+          <button type="button" onclick="openAddTrackerModal()" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition flex items-center gap-2 self-start">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add Application Manually</span>
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button type="button" onclick="filterTracker('All')" data-filter="All" class="tracker-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-brand-600 text-white">All</button>
+          <button type="button" onclick="filterTracker('Saved')" data-filter="Saved" class="tracker-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">Saved</button>
+          <button type="button" onclick="filterTracker('Applied')" data-filter="Applied" class="tracker-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">Applied</button>
+          <button type="button" onclick="filterTracker('Interview')" data-filter="Interview" class="tracker-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">Interview</button>
+          <button type="button" onclick="filterTracker('Offer')" data-filter="Offer" class="tracker-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">Offer</button>
+          <button type="button" onclick="filterTracker('Rejected')" data-filter="Rejected" class="tracker-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">Rejected</button>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div id="trackerListContainer" class="divide-y divide-slate-200 dark:divide-slate-800"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+
+  <!-- ===================================================================== -->
+  <!-- MODALS (Forgot Password, Change Password, Google Sign-In, Settings)   -->
+  <!-- ===================================================================== -->
+
+  <!-- 1. Forgot / Reset Password Modal -->
+  <div id="forgotPasswordModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+            <i class="fa-solid fa-key text-sm"></i>
+          </div>
+          <h3 class="font-bold text-base text-slate-900 dark:text-white">Reset Your Password</h3>
+        </div>
+        <button type="button" onclick="closeForgotPasswordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+        Enter your registered email address to receive a password reset link or set a new password.
+      </p>
+      <form onsubmit="handleResetPassword(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Registered Email *</label>
+          <input id="resetEmailInput" type="email" required placeholder="you@university.edu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">New Password (if resetting locally)</label>
+          <input id="resetNewPasswordInput" type="password" minlength="6" placeholder="Enter new password (min 6 chars)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeForgotPasswordModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold">Reset Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. In-App Change Password Modal -->
+  <div id="changePasswordModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+            <i class="fa-solid fa-lock text-sm"></i>
+          </div>
+          <h3 class="font-bold text-base text-slate-900 dark:text-white">Change Account Password</h3>
+        </div>
+        <button type="button" onclick="closeChangePasswordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleChangePassword(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Current Password *</label>
+          <input id="currentPasswordInput" type="password" required placeholder="Enter current password" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">New Password (min 6 chars) *</label>
+          <input id="newPasswordInput" type="password" required minlength="6" placeholder="Enter new password" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Confirm New Password *</label>
+          <input id="confirmNewPasswordInput" type="password" required minlength="6" placeholder="Re-enter new password" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeChangePasswordModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold">Save New Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Google Account Fallback Modal -->
+  <div id="googleModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <svg class="w-5 h-5" viewBox="0 0 24 24">
+            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/>
+            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/>
+            <path fill="#FBBC05" d="M5.3 14.8c-.2-.8-.4-1.6-.4-2.5s.2-1.7.4-2.5L1.6 7C.6 9 0 11.2 0 13.5s.6 4.5 1.6 6.5l3.7-2.9z"/>
+            <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.8C3.5 21.4 7.4 24 12 24z"/>
+          </svg>
+          <h3 class="font-bold text-base text-slate-900 dark:text-white">Continue with Google</h3>
+        </div>
+        <button type="button" onclick="closeGoogleModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleGoogleSignInLocal(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Your Name *</label>
+          <input id="googleNameInput" type="text" required placeholder="e.g., Rohan Sharma" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Google Email *</label>
+          <input id="googleEmailInput" type="email" required placeholder="yourname@gmail.com" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Workspace Password *</label>
+          <input id="googlePasswordInput" type="password" required minlength="6" placeholder="Enter or set your password (min 6 chars)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeGoogleModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold">Continue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Optional Gemini API Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-base text-slate-900 dark:text-white">Analysis Engine &amp; Gemini API Key</h3>
+        <button type="button" onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+        ResumeFit works <strong>100% out-of-the-box</strong> using its built-in Smart Skill-Graph &amp; Bullet Rewriter Engine. Optionally, paste a Google Gemini API key below to also invoke live `gemini-2.5-flash` cloud calls.
+      </p>
+      <div>
+        <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Optional Gemini API Key</label>
+        <input id="geminiKeyInput" type="password" placeholder="AIzaSy... (Leave blank for built-in local engine)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono dark:text-white" />
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold">Cancel</button>
+        <button type="button" onclick="saveApiKey()" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Manual Tracker Application Modal -->
+  <div id="addTrackerModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-base text-slate-900 dark:text-white">Add Job Application</h3>
+        <button type="button" onclick="closeAddTrackerModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleAddManualApplication(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Job Title *</label>
+          <input id="manualJobTitle" type="text" required placeholder="e.g., Frontend Developer Intern" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Company *</label>
+          <input id="manualJobCompany" type="text" required placeholder="e.g., Zomato" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Match Score (%)</label>
+            <input id="manualJobScore" type="number" min="0" max="100" value="75" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Status</label>
+            <select id="manualJobStatus" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm dark:text-white">
+              <option value="Saved">Saved</option>
+              <option value="Applied" selected>Applied</option>
+              <option value="Interview">Interview</option>
+              <option value="Offer">Offer</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeAddTrackerModal()" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold">Add to Tracker</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- External Application Script -->
+  <script src="script.js"></script>
+</body>
+</html>
